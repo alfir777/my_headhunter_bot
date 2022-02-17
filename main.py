@@ -1,6 +1,4 @@
-import csv
 import datetime
-import json
 import os
 import time
 
@@ -9,6 +7,11 @@ from fake_useragent import UserAgent
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+
+import csv
+import json
+from services import create_folder
+
 
 # patch to chromedriver
 # chromedriver = r"C:\patch\to\file\chromedriver.exe"
@@ -34,24 +37,26 @@ text_search = 'Python'
 area = '99'
 vacancies = {}
 
-try:
-    current_time = datetime.datetime.now().strftime('%Y%m%d')
+current_time = datetime.datetime.now().strftime('%Y%m%d')
+create_folder(folder='csv')
+cvs_file = f'csv/hh.ru_{text_search}_{area}_{current_time}.csv'
 
-    with open(f'hh.ru_{text_search}_{area}_{current_time}.csv', 'w', encoding='utf-8', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(
-            (
-                'ID вакансии',
-                'Статус',
-                'Дата размещения',
-                'Название вакансии',
-                'Компания',
-                'Ссылка на компанию',
-                'Ссылка на вакансию',
-                'Зарплата'
-            )
+with open(cvs_file, 'w', encoding='utf-8', newline='') as file:
+    writer = csv.writer(file)
+    writer.writerow(
+        (
+            'ID вакансии',
+            'Статус',
+            'Дата размещения',
+            'Название вакансии',
+            'Компания',
+            'Ссылка на компанию',
+            'Ссылка на вакансию',
+            'Зарплата'
         )
+    )
 
+try:
     browser.get(f'https://hh.ru/search/vacancy?area={area}&text={text_search}')
 
     try:
@@ -121,7 +126,7 @@ try:
                 'vacancy_salary': vacancy_salary
             }
 
-            with open(f'hh.ru_{text_search}_{area}_{current_time}.csv', 'a', encoding='utf-8', newline='') as file:
+            with open(cvs_file, 'a', encoding='utf-8', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(
                     (
@@ -137,8 +142,8 @@ try:
                 )
         print(f'Обработано {page + 1}/{pages_count}')
         os.remove(f"index_selenium_{page}.html")
-
-    with open(f'hh.ru_{text_search}_{area}_{current_time}.json', 'w+', encoding='utf-8') as file:
+    create_folder(folder='json')
+    with open(f'json/hh.ru_{text_search}_{area}_{current_time}.json', 'w+', encoding='utf-8') as file:
         json.dump(vacancies, file, indent=4, ensure_ascii=False)
 
 except Exception as exc:

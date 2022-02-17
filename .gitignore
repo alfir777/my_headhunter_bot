@@ -1,2 +1,5 @@
 /venv/
+/csv/
+/json/
 .idea/
+.env
