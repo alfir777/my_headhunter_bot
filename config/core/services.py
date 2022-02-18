@@ -67,9 +67,12 @@ def get_vacancies():
         browser.get(f'https://hh.ru/search/vacancy?area={AREA}&text={TEXT_SEARCH}')
 
         try:
-            pages_count = int(browser.find_elements_by_xpath("//div[@data-qa='pager-block']")[0].text.split()[-2])
+            pages_count = browser.find_elements_by_xpath("//div[@data-qa='pager-block']")[0].text.split()[-2]
+            pages_count = int(pages_count.replace('...', ''))
         except IndexError as exc:
             pages_count = 1
+        except Exception as exc:
+            print('Не предвиденная ошибка!!! pages_count!!!')
 
         for page in range(pages_count):
             browser.get(f'https://hh.ru/search/vacancy?area={AREA}&text={TEXT_SEARCH}&page={page}')
@@ -89,11 +92,15 @@ def get_vacancies():
                     vacancy_id = item.find('a', class_='bloko-link').get('href').split('?')[0].split('/')[-1]
                 except AttributeError as exc:
                     vacancy_id = 'Нет ID вакансии'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_id!!!')
 
                 try:
                     vacancy_data = item.find(attrs={"data-qa": "vacancy-serp__vacancy-date"}).text.strip()
                 except AttributeError as exc:
                     vacancy_data = '01.01.1970'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_data!!!')
 
                 vacancy_data = datetime.strptime(vacancy_data, "%d.%m.%Y")
 
@@ -101,11 +108,15 @@ def get_vacancies():
                     vacancy_title = item.find(attrs={"data-qa": "vacancy-serp__vacancy-title"}).text.strip()
                 except AttributeError as exc:
                     vacancy_title = 'Нет названия вакансии'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_title!!!')
 
                 try:
                     vacancy_company = item.find(attrs={"data-qa": "vacancy-serp__vacancy-employer"}).text.strip()
                 except AttributeError as exc:
                     vacancy_company = 'Нет названия компании'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_company!!!')
 
                 try:
                     vacancy_company_href = item.find(
@@ -114,16 +125,22 @@ def get_vacancies():
                     vacancy_company_href = 'https://hh.ru/' + vacancy_company_href
                 except AttributeError as exc:
                     vacancy_company_href = 'Нет ссылки на компанию'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_company_href!!!')
 
                 try:
                     vacancy_href = item.find('a', class_='bloko-link').get('href').split('?')[0]
                 except AttributeError as exc:
                     vacancy_href = 'Нет ссылки на вакансию'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_href!!!')
 
                 try:
                     vacancy_salary = item.find(attrs={"data-qa": "vacancy-serp__vacancy-compensation"}).text.strip()
                 except AttributeError as exc:
                     vacancy_salary = 'Не указан доход'
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! vacancy_salary!!!')
 
                 try:
                     vacancy = Vacancy.objects.get(vacancy_id=vacancy_id)
@@ -137,6 +154,7 @@ def get_vacancies():
                 except Vacancy.DoesNotExist:
                     vacancy = Vacancy(
                         vacancy_id=vacancy_id,
+                        area=Area.objects.get(area_id=AREA),
                         title=vacancy_title,
                         company=vacancy_company,
                         url_company=vacancy_company_href,
@@ -144,11 +162,14 @@ def get_vacancies():
                         updated_at=vacancy_data,
                         salary=vacancy_salary,
                     ).save()
+                except Exception as exc:
+                    print('Не предвиденная ошибка!!! Vacancy.objects!!!')
 
             print(f'Обработано {page + 1}/{pages_count}')
             os.remove(f"index_selenium_{page}.html")
     except Exception as exc:
         print(exc)
+        print('Не предвиденная ошибка!!! browser')
     finally:
         browser.close()
         browser.quit()

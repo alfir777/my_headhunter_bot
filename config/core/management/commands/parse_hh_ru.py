@@ -8,4 +8,3 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         get_vacancies()
-

@@ -13,6 +13,9 @@ class Area(BaseModel):
     parent_id = models.IntegerField(verbose_name='parent_id area')
     name = models.CharField(max_length=255, db_index=True, verbose_name='Название области')
 
+    def __str__(self):
+        return self.name
+
     class Meta:
         verbose_name = "Область"
         verbose_name_plural = "Области"
@@ -20,6 +23,7 @@ class Area(BaseModel):
 
 class Vacancy(BaseModel):
     vacancy_id = models.IntegerField(unique=True, db_index=True, verbose_name='ID вакансии')
+    area = models.ForeignKey(Area, on_delete=models.PROTECT, verbose_name='Область', related_name="vacancies")
     title = models.CharField(max_length=255, db_index=True, verbose_name='Название вакансии')
     company = models.CharField(max_length=255, db_index=True, verbose_name='Название компании')
     url_company = models.URLField(verbose_name='Ссылка на компанию')
