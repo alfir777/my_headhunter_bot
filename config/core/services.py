@@ -16,6 +16,17 @@ from config.settings import TEXT_SEARCH, AREA
 from core.models import Area, Vacancy
 
 
+def update_status_vacancy():
+    # https://github.com/hhru/api/blob/master/docs/vacancies.md
+    vacancies = Vacancy.objects.all()
+    for item in vacancies:
+        request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
+        json_file = request.json()
+        if json_file["archived"]:
+            item.status = 'archive'
+            item.save()
+
+
 def get_areas():
     request = requests.get('https://api.hh.ru/areas')
     areas = request.json()

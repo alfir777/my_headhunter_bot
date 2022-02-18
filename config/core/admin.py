@@ -34,6 +34,7 @@ class VacancyAdmin(admin.ModelAdmin):
     )
     list_editable = ('status',)
     ordering = ('created_at',)
+    search_fields = ('vacancy_id', )
 
 
 @admin.register(Area)
