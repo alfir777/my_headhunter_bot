@@ -16,14 +16,47 @@ from config.settings import TEXT_SEARCH, AREA
 from core.models import Area, Vacancy
 
 
+def log_errors(func):
+    def sub_func(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except Exception as exc:
+            error_message = f'Произошла ошибка: {exc}'
+            print(error_message)
+            raise exc
+
+    return sub_func
+
+
+def send_message_to_telegram(message):
+    import requests
+
+    token = os.environ['TELEGRAM_BOT_TOKEN']
+    chat_id = 166978622
+
+    URL = 'https://api.telegram.org/bot' + token + '/sendMessage'
+    data = {'chat_id': chat_id, 'text': message, }
+    request = requests.post(URL, data=data)
+
+
 def update_status_vacancy():
-    # https://github.com/hhru/api/blob/master/docs/vacancies.md
+    '''
+    Более подробная информация по ссылке:
+    https://github.com/hhru/api/blob/master/docs/vacancies.md
+    :return: None
+    '''
+
     vacancies = Vacancy.objects.all()
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
         json_file = request.json()
-        if json_file["archived"]:
+        if json_file["archived"] and item.status == 'new':
+            send_message_to_telegram(f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
             item.status = 'archive'
+            item.save()
+        elif not json_file["archived"] and item.status == 'archive':
+            send_message_to_telegram(f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
+            item.status = 'new'
             item.save()
 
 
@@ -163,6 +196,7 @@ def get_vacancies():
                     vacancy.salary = vacancy_salary
                     vacancy.save()
                 except Vacancy.DoesNotExist:
+                    send_message_to_telegram(f'Вакансия \n\n {vacancy_href}')
                     vacancy = Vacancy(
                         vacancy_id=vacancy_id,
                         area=Area.objects.get(area_id=AREA),

@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.contrib.admin.filters import SimpleListFilter
 
-from .forms import AreaAdminForm, VacancyAdminForm
-from .models import Vacancy, Area
+from .forms import AreaAdminForm, VacancyAdminForm, ProfileAdminForm, MessageAdminForm
+from .models import Vacancy, Area, Profile, Message
 
 
 class AreaListFilter(SimpleListFilter):
@@ -34,7 +34,7 @@ class VacancyAdmin(admin.ModelAdmin):
     )
     list_editable = ('status',)
     ordering = ('created_at',)
-    search_fields = ('vacancy_id', )
+    search_fields = ('vacancy_id', 'title')
 
 
 @admin.register(Area)
@@ -42,3 +42,17 @@ class AreaAdmin(admin.ModelAdmin):
     list_display = ('area_id', 'parent_id', 'name',)
     search_fields = ('name',)
     form = AreaAdminForm
+
+
+@admin.register(Profile)
+class ProfileAdmin(admin.ModelAdmin):
+    list_display = ('external_id', 'name',)
+    search_fields = ('name',)
+    form = ProfileAdminForm
+
+
+@admin.register(Message)
+class MessageAdmin(admin.ModelAdmin):
+    list_display = ('profile', 'text', 'created_at',)
+    search_fields = ('name',)
+    form = MessageAdminForm

@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Area, Vacancy
+from .models import Area, Vacancy, Profile, Message
 
 
 class VacancyAdminForm(forms.ModelForm):
@@ -22,3 +22,15 @@ class AreaAdminForm(forms.ModelForm):
             'parent_id': forms.TextInput,
             'name': forms.TextInput,
         }
+
+
+class ProfileAdminForm(forms.ModelForm):
+    class Meta:
+        model = Profile
+        fields = '__all__'
+
+
+class MessageAdminForm(forms.ModelForm):
+    class Meta:
+        model = Message
+        fields = '__all__'
