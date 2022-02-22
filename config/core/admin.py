@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.admin.filters import SimpleListFilter
+from django.db.models import Count
 
 from .forms import AreaAdminForm, VacancyAdminForm, ProfileAdminForm, MessageAdminForm
 from .models import Vacancy, Area, Profile, Message
@@ -10,17 +11,13 @@ class AreaListFilter(SimpleListFilter):
     parameter_name = 'decade'
 
     def lookups(self, request, model_admin):
-        return (
-            ('Уфа', 'Уфа'),
-            ('Екатеринбург', 'Екатеринбург'),
-        )
+        return Area.objects.annotate(one=Count('vacancies')).filter(one__gt=0).values_list('id', 'name')
 
     def queryset(self, request, queryset):
-        # TODO Найти более правильное решение..
-        if self.value() == 'Уфа':
-            return Vacancy.objects.filter(area=Area.objects.get(area_id=99))
-        if self.value() == 'Екатеринбург':
-            return Vacancy.objects.filter(area=Area.objects.get(area_id=3))
+        if self.value() is None:
+            return queryset.all()
+        else:
+            return queryset.filter(area__id__exact=self.value())
 
 
 @admin.register(Vacancy)
