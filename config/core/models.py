@@ -12,6 +12,7 @@ class Area(BaseModel):
     area_id = models.IntegerField(unique=True, db_index=True, verbose_name='ID area')
     parent_id = models.IntegerField(verbose_name='parent_id area')
     name = models.CharField(max_length=255, db_index=True, verbose_name='Название области')
+    in_search = models.BooleanField(default=False, verbose_name='Искать?')
 
     def __str__(self):
         return self.name

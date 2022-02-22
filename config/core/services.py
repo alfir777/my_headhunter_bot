@@ -40,11 +40,11 @@ def send_message_to_telegram(message):
 
 
 def update_status_vacancy():
-    '''
+    """
     Более подробная информация по ссылке:
     https://github.com/hhru/api/blob/master/docs/vacancies.md
     :return: None
-    '''
+    """
 
     vacancies = Vacancy.objects.all()
     for item in vacancies:
@@ -218,3 +218,84 @@ def get_vacancies():
     finally:
         browser.close()
         browser.quit()
+
+
+def get_vacancies_in_api():
+    """
+    Создаем метод для получения страницы со списком вакансий.
+    Аргументы:
+        page - Индекс страницы, начинается с 0. Значение по умолчанию 0, т.е. первая страница
+    """
+
+    params = {
+        # 'text': f'NAME:{TEXT_SEARCH}',
+        'text': TEXT_SEARCH,
+        'area': AREA,
+        'page': 0,
+        'per_page': 100
+    }
+
+    req = requests.get('https://api.hh.ru/vacancies', params)
+    data = req.content.decode()
+    json_data = json.loads(data)
+    req.close()
+    for page in range(0, json_data['pages'] + 1):
+        params = {
+            # 'text': f'NAME:{TEXT_SEARCH}',
+            'text': TEXT_SEARCH,
+            'area': AREA,
+            'page': page,
+            'per_page': 100
+        }
+
+        req = requests.get('https://api.hh.ru/vacancies', params)  # Посылаем запрос к API
+        data = req.content.decode()  # Декодируем его ответ, чтобы Кириллица отображалась корректно
+        json_data = json.loads(data)
+        req.close()
+
+        for item in json_data['items']:
+            salary = item['salary']
+            if salary is None:
+                salary = 'Не указан доход'
+            else:
+                if item['salary']['from'] is None:
+                    salary_from = ''
+                else:
+                    salary_from = item['salary']['from']
+                if item['salary']['to'] is None:
+                    salary_to = ''
+                else:
+                    salary_to = item['salary']['to']
+                if item['salary']['currency'] is None:
+                    salary_currency = ''
+                else:
+                    salary_currency = item['salary']['currency']
+                if item['salary']['gross'] is None:
+                    salary_gross = ''
+                else:
+                    salary_gross = 'до вычета налогов'
+                salary = f'{salary_from} {salary_to} {salary_currency} {salary_gross}'
+            try:
+                vacancy = Vacancy.objects.get(vacancy_id=item['id'])
+                vacancy.title = item['name']
+                vacancy.company = item['employer']['name']
+                vacancy.url_company = item['employer']['url']
+                vacancy.url_vacancy = item['alternate_url']
+                vacancy.updated_at = item['created_at']
+                vacancy.salary = salary
+                vacancy.save()
+            except Vacancy.DoesNotExist:
+                send_message_to_telegram(f'Вакансия \n\n {item["alternate_url"]}')
+                vacancy = Vacancy(
+                    vacancy_id=item['id'],
+                    area=Area.objects.get(area_id=AREA),
+                    title=item['name'],
+                    company=item['employer']['name'],
+                    url_company=item['employer']['url'],
+                    url_vacancy=item['alternate_url'],
+                    updated_at=item['created_at'],
+                    salary=salary,
+                ).save()
+
+        time.sleep(0.25)
+    send_message_to_telegram('Вакансии собраны/обновлены')

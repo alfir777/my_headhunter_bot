@@ -6,7 +6,7 @@ from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, Comm
 from telegram.utils.request import Request
 
 from core.models import Profile, Message
-from core.services import log_errors, update_status_vacancy, get_vacancies
+from core.services import log_errors, update_status_vacancy, get_vacancies, get_vacancies_in_api
 
 
 @log_errors
@@ -58,6 +58,11 @@ def do_get_vacancies(update: Update, context: CallbackContext):
     get_vacancies()
 
 
+@log_errors
+def do_get_vacancies_in_api(update: Update, context: CallbackContext):
+    get_vacancies_in_api()
+
+
 class Command(BaseCommand):
     help = 'Telegram-bot'
 
@@ -84,6 +89,9 @@ class Command(BaseCommand):
 
         message_handler_get_vacancies = CommandHandler('get_vacancies', do_get_vacancies)
         updater.dispatcher.add_handler(message_handler_get_vacancies)
+
+        message_handler_get_api_vacancies = CommandHandler('get_vacancies_in_api', do_get_vacancies_in_api)
+        updater.dispatcher.add_handler(message_handler_get_api_vacancies)
 
         message_handler = MessageHandler(Filters.text, do_echo)
         updater.dispatcher.add_handler(message_handler)

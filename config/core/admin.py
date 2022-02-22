@@ -36,7 +36,8 @@ class VacancyAdmin(admin.ModelAdmin):
 
 @admin.register(Area)
 class AreaAdmin(admin.ModelAdmin):
-    list_display = ('area_id', 'parent_id', 'name',)
+    list_display = ('area_id', 'in_search', 'parent_id', 'name',)
+    list_editable = ('in_search',)
     search_fields = ('name',)
     form = AreaAdminForm
 
