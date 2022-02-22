@@ -140,4 +140,3 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 TEXT_SEARCH = os.environ['TEXT_SEARCH']
-AREA = os.environ['AREA']

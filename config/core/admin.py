@@ -23,6 +23,8 @@ class AreaListFilter(SimpleListFilter):
 @admin.register(Vacancy)
 class VacancyAdmin(admin.ModelAdmin):
     form = VacancyAdminForm
+    save_as = True
+    save_on_top = True
     list_display = (
         'vacancy_id', 'area', 'status', 'title', 'company', 'url_vacancy', 'created_at', 'updated_at', 'salary'
     )
@@ -36,6 +38,8 @@ class VacancyAdmin(admin.ModelAdmin):
 
 @admin.register(Area)
 class AreaAdmin(admin.ModelAdmin):
+    save_as = True
+    save_on_top = True
     list_display = ('area_id', 'in_search', 'parent_id', 'name',)
     list_editable = ('in_search',)
     search_fields = ('name',)
@@ -44,6 +48,8 @@ class AreaAdmin(admin.ModelAdmin):
 
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
+    save_as = True
+    save_on_top = True
     list_display = ('external_id', 'name',)
     search_fields = ('name',)
     form = ProfileAdminForm
@@ -51,6 +57,8 @@ class ProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Message)
 class MessageAdmin(admin.ModelAdmin):
+    save_as = True
+    save_on_top = True
     list_display = ('profile', 'text', 'created_at',)
     search_fields = ('name',)
     form = MessageAdminForm

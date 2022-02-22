@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 from pandas import json_normalize
 
-from config.settings import TEXT_SEARCH, AREA
+from config.settings import TEXT_SEARCH
 from core.models import Area, Vacancy
 
 
@@ -24,7 +24,7 @@ def log_errors(func):
 
 def send_message_to_telegram(message):
     token = os.environ['TELEGRAM_BOT_TOKEN']
-    chat_id = 166978622
+    chat_id = os.environ['TELEGRAM_CHAT_ID']
 
     URL = 'https://api.telegram.org/bot' + token + '/sendMessage'
     data = {'chat_id': chat_id, 'text': message, }
@@ -82,7 +82,7 @@ def get_areas():
             ).save()
 
 
-def get_vacancies_in_api():
+def get_vacancies_in_api(area):
     """
     Создаем метод для получения страницы со списком вакансий.
     Аргументы:
@@ -92,7 +92,7 @@ def get_vacancies_in_api():
     params = {
         # 'text': f'NAME:{TEXT_SEARCH}',
         'text': TEXT_SEARCH,
-        'area': AREA,
+        'area': area,
         'page': 0,
         'per_page': 100
     }
@@ -105,7 +105,7 @@ def get_vacancies_in_api():
         params = {
             # 'text': f'NAME:{TEXT_SEARCH}',
             'text': TEXT_SEARCH,
-            'area': AREA,
+            'area': area,
             'page': page,
             'per_page': 100
         }
@@ -150,7 +150,7 @@ def get_vacancies_in_api():
                 send_message_to_telegram(f'Вакансия \n\n {item["alternate_url"]}')
                 vacancy = Vacancy(
                     vacancy_id=item['id'],
-                    area=Area.objects.get(area_id=AREA),
+                    area=Area.objects.get(area_id=area),
                     title=item['name'],
                     company=item['employer']['name'],
                     url_company=item['employer']['url'],
@@ -160,4 +160,4 @@ def get_vacancies_in_api():
                 ).save()
 
         time.sleep(0.25)
-    send_message_to_telegram('Вакансии собраны/обновлены')
+    send_message_to_telegram(f'{Area.objects.get(area_id=area)} - вакансии собраны/обновлены ')
