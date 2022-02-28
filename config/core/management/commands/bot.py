@@ -1,16 +1,80 @@
 import os
 
 from django.core.management.base import BaseCommand
-from telegram import Bot, Update
-from telegram.ext import Updater, MessageHandler, Filters, CallbackContext, CommandHandler
+from telegram import Bot, Update, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import Updater, CallbackContext, CommandHandler, CallbackQueryHandler
 from telegram.utils.request import Request
 
 from core.models import Profile, Message, Area, SearchQuery
-from core.services import log_errors, update_status_vacancy, get_vacancies_in_api, send_message_to_telegram
+from core.services import log_errors, update_status_vacancy, get_vacancies_in_api, send_message_to_telegram, get_areas
+
+
+def start(update: Update, context: CallbackContext) -> None:
+    update.message.reply_text("Use /status, /get_vacancies, /add, /get_area or /search to test this bot.")
 
 
 @log_errors
-def do_echo(update: Update, context: CallbackContext):
+def status(update: Update, context: CallbackContext):
+    update_status_vacancy()
+
+
+@log_errors
+def get_area(update: Update, context: CallbackContext):
+    get_areas()
+
+
+@log_errors
+def get_vacancies(update: Update, context: CallbackContext):
+    if len(Area.objects.all) == 0:
+        send_message_to_telegram('Выполните команду для заполнения областей:\n/get_area')
+    area = Area.objects.filter(in_search=True)
+    search_text = SearchQuery.objects.filter(in_search=True)
+    if len(area) == 0:
+        send_message_to_telegram('Не выбрано не одного региона')
+    elif len(search_text) == 0:
+        send_message_to_telegram('Нет ни одного текстового запроса')
+    else:
+        for item in area:
+            for text in search_text:
+                get_vacancies_in_api(area=item.area_id, search_text=text)
+
+
+@log_errors
+def add(update: Update, context: CallbackContext) -> None:
+    chat_id = update.message.chat_id
+
+    text = update.message.text
+    profile, _ = Profile.objects.get_or_create(
+        external_id=chat_id,
+        defaults={
+            'name': update.message.from_user.username,
+        }
+    )
+    Message(
+        profile=profile,
+        text=text,
+    ).save()
+
+    try:
+        area = Area.objects.filter(name__icontains=" ".join(context.args))
+        if len(area) == 0:
+            send_message_to_telegram('Не найдено не одного региона')
+            return
+        elif len(area) < 10:
+            send_message_to_telegram('Будет выведено первые 10 результатов')
+        keyboard = [[InlineKeyboardButton(f'{item.name}', callback_data=f'{item.name}'), ] for item in area[:10]]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        update.message.reply_text(
+            'Выберите из возможных:',
+            reply_markup=reply_markup
+        )
+
+    except (IndexError, ValueError):
+        update.message.reply_text('Usage: /add <text_search>')
+
+
+@log_errors
+def search(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
     text = update.message.text
 
@@ -24,47 +88,27 @@ def do_echo(update: Update, context: CallbackContext):
         profile=profile,
         text=text,
     ).save()
-
-    reply_text = f'Ваш ID = {chat_id}\n\n {text}'
-    update.message.reply_text(
-        text=reply_text,
-    )
-
-
-@log_errors
-def do_count(update: Update, context: CallbackContext):
-    chat_id = update.message.chat_id
-
-    profile, _ = Profile.objects.get_or_create(
-        external_id=chat_id,
-        defaults={
-            'name': update.message.from_user.username,
-        }
-    )
-    count = Message.objects.filter(profile=profile).count()
-
-    update.message.reply_text(
-        text=f'У Вас {count} сообщений',
-    )
+    try:
+        if not context.args:
+            raise ValueError
+        SearchQuery(
+            search_text=text[7:],
+            in_search=True,
+        ).save()
+        update.message.reply_text(f'Запрос {text[8:]} сохранен')
+    except (IndexError, ValueError):
+        update.message.reply_text('Usage: /search <text_search>')
 
 
 @log_errors
-def do_status_vacancy(update: Update, context: CallbackContext):
-    update_status_vacancy()
+def button(update: Update, context: CallbackContext) -> None:
+    query = update.callback_query
 
-
-@log_errors
-def do_get_vacancies_in_api(update: Update, context: CallbackContext):
-    area = Area.objects.filter(in_search=True)
-    search_text = SearchQuery.objects.filter(in_search=True)
-    if len(area) == 0:
-        send_message_to_telegram('Не выбрано не одного региона')
-    elif len(search_text) == 0:
-        send_message_to_telegram('Нет ни одного текстового запроса')
-    else:
-        for item in area:
-            for text in search_text:
-                get_vacancies_in_api(area=item.area_id, search_text=text)
+    query.answer()
+    area = Area.objects.get(name=query.data)
+    area.in_search = True
+    area.save()
+    query.edit_message_text(text=f"Выбрана область поиска: {query.data}")
 
 
 class Command(BaseCommand):
@@ -85,17 +129,13 @@ class Command(BaseCommand):
             use_context=True
         )
 
-        message_handler_count = CommandHandler('count', do_count)
-        updater.dispatcher.add_handler(message_handler_count)
-
-        message_handler_status = CommandHandler('status', do_status_vacancy)
-        updater.dispatcher.add_handler(message_handler_status)
-
-        message_handler_get_api_vacancies = CommandHandler('get_vacancies_in_api', do_get_vacancies_in_api)
-        updater.dispatcher.add_handler(message_handler_get_api_vacancies)
-
-        message_handler = MessageHandler(Filters.text, do_echo)
-        updater.dispatcher.add_handler(message_handler)
+        updater.dispatcher.add_handler(CommandHandler('status', status))
+        updater.dispatcher.add_handler(CommandHandler('get_vacancies', get_vacancies))
+        updater.dispatcher.add_handler(CommandHandler('get_area', get_area))
+        updater.dispatcher.add_handler(CommandHandler('start', start))
+        updater.dispatcher.add_handler(CommandHandler('add', add))
+        updater.dispatcher.add_handler(CallbackQueryHandler(button))
+        updater.dispatcher.add_handler(CommandHandler('search', search))
 
         updater.start_polling()
         updater.idle()
