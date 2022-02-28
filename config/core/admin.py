@@ -2,8 +2,8 @@ from django.contrib import admin
 from django.contrib.admin.filters import SimpleListFilter
 from django.db.models import Count
 
-from .forms import AreaAdminForm, VacancyAdminForm, ProfileAdminForm, MessageAdminForm
-from .models import Vacancy, Area, Profile, Message
+from .forms import AreaAdminForm, VacancyAdminForm, ProfileAdminForm, MessageAdminForm, SearchQueryAdminForm
+from .models import Vacancy, Area, Profile, Message, SearchQuery
 
 
 class AreaListFilter(SimpleListFilter):
@@ -62,3 +62,13 @@ class MessageAdmin(admin.ModelAdmin):
     list_display = ('profile', 'text', 'created_at',)
     search_fields = ('name',)
     form = MessageAdminForm
+
+
+@admin.register(SearchQuery)
+class SearchQueryAdmin(admin.ModelAdmin):
+    save_as = True
+    save_on_top = True
+    list_display = ('search_text', 'in_search')
+    search_fields = ('search_text',)
+    list_editable = ('in_search',)
+    form = SearchQueryAdminForm

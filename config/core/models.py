@@ -8,6 +8,18 @@ class BaseModel(models.Model):
         abstract = True
 
 
+class SearchQuery(BaseModel):
+    search_text = models.CharField(max_length=255, db_index=True, verbose_name='Текст запроса')
+    in_search = models.BooleanField(default=False, verbose_name='Искать?')
+
+    def __str__(self):
+        return self.search_text
+
+    class Meta:
+        verbose_name = "Поисковой запрос"
+        verbose_name_plural = "Поисковые запросы"
+
+
 class Area(BaseModel):
     area_id = models.IntegerField(unique=True, db_index=True, verbose_name='ID area')
     parent_id = models.IntegerField(verbose_name='parent_id area')

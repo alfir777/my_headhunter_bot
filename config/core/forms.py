@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import Area, Vacancy, Profile, Message
+from .models import Area, Vacancy, Profile, Message, SearchQuery
 
 
 class VacancyAdminForm(forms.ModelForm):
@@ -33,4 +33,10 @@ class ProfileAdminForm(forms.ModelForm):
 class MessageAdminForm(forms.ModelForm):
     class Meta:
         model = Message
+        fields = '__all__'
+
+
+class SearchQueryAdminForm(forms.ModelForm):
+    class Meta:
+        model = SearchQuery
         fields = '__all__'

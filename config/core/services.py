@@ -6,7 +6,6 @@ import pandas as pd
 import requests
 from pandas import json_normalize
 
-from config.settings import TEXT_SEARCH
 from core.models import Area, Vacancy
 
 
@@ -82,16 +81,15 @@ def get_areas():
             ).save()
 
 
-def get_vacancies_in_api(area):
+def get_vacancies_in_api(area, search_text):
     """
     Создаем метод для получения страницы со списком вакансий.
     Аргументы:
         page - Индекс страницы, начинается с 0. Значение по умолчанию 0, т.е. первая страница
     """
-
     params = {
         # 'text': f'NAME:{TEXT_SEARCH}',
-        'text': TEXT_SEARCH,
+        'text': search_text,
         'area': area,
         'page': 0,
         'per_page': 100
@@ -103,8 +101,7 @@ def get_vacancies_in_api(area):
     req.close()
     for page in range(0, json_data['pages'] + 1):
         params = {
-            # 'text': f'NAME:{TEXT_SEARCH}',
-            'text': TEXT_SEARCH,
+            'text': search_text,
             'area': area,
             'page': page,
             'per_page': 100
@@ -158,6 +155,7 @@ def get_vacancies_in_api(area):
                     updated_at=item['created_at'],
                     salary=salary,
                 ).save()
-
         time.sleep(0.25)
-    send_message_to_telegram(f'{Area.objects.get(area_id=area)} - вакансии собраны/обновлены ')
+    send_message_to_telegram(
+        f'{Area.objects.get(area_id=area)} - вакансии собраны/обновлены\n (запрос - "{search_text}")'
+    )
