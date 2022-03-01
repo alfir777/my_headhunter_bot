@@ -1,4 +1,5 @@
 /venv/
+/config/static/
 migrations/
 .idea/
 .env
