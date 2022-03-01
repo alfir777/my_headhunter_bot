@@ -15,7 +15,7 @@ services:
       - .:/home/user/web
     restart: always
     ports:
-      - '8080:8000'
+      - '8089:8000'
     labels:
       - "traefik.enable=true"
       #- "traefik.http.routers.job.rule=Host(`$DOMAINNAME`)"
@@ -26,7 +26,7 @@ services:
       ## Middlewares
       - "traefik.http.routers.job-rtr.middlewares=chain-no-auth@file"
       ## HTTP Services
-      - "traefik.http.routers.job-rtr.service=django-svc"
+      - "traefik.http.routers.job-rtr.service=job-svc"
       - "traefik.http.services.job-svc.loadbalancer.server.port=8000"
       ## Disable from watchtower
       - "com.centurylinklabs.watchtower.enable=false"
