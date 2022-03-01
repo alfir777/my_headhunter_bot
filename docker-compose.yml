@@ -32,3 +32,15 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     networks:
       - web
+
+  bot:
+    build: .
+    container_name: bot
+    env_file:
+      - .env
+    command: bash -c 'while !</dev/tcp/postgres/5432; do sleep 1; done; python3 manage.py bot'
+    volumes:
+      - .:/home/user/web
+    restart: always
+    networks:
+      - web
