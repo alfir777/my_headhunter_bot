@@ -4,6 +4,7 @@ import time
 
 import pandas as pd
 import requests
+from django.core.handlers.base import logger
 from pandas import json_normalize
 
 from core.models import Area, Vacancy
@@ -41,14 +42,17 @@ def update_status_vacancy():
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
         json_file = request.json()
-        if json_file["archived"] and item.status == 'new':
-            send_message_to_telegram(f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
-            item.status = 'archive'
-            item.save()
-        elif not json_file["archived"] and item.status == 'archive':
-            send_message_to_telegram(f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
-            item.status = 'new'
-            item.save()
+        try:
+            if json_file["archived"] and item.status == 'new':
+                send_message_to_telegram(f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                item.status = 'archive'
+                item.save()
+            elif not json_file["archived"] and item.status == 'archive':
+                send_message_to_telegram(f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
+                item.status = 'new'
+                item.save()
+        except KeyError:
+            logger.error(f'Ошибка с https://api.hh.ru/vacancies/{item.vacancy_id}')
     send_message_to_telegram('Вакансии обновлены')
 
 
