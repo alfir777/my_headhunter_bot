@@ -25,7 +25,7 @@ def get_area(update: Update, context: CallbackContext):
 
 @log_errors
 def get_vacancies(update: Update, context: CallbackContext):
-    if len(Area.objects.all) == 0:
+    if len(Area.objects.all()) == 0:
         send_message_to_telegram('Выполните команду для заполнения областей:\n/get_area')
     area = Area.objects.filter(in_search=True)
     search_text = SearchQuery.objects.filter(in_search=True)
@@ -60,9 +60,10 @@ def add(update: Update, context: CallbackContext) -> None:
         if len(area) == 0:
             send_message_to_telegram('Не найдено не одного региона')
             return
-        elif len(area) < 10:
+        elif len(area) > 10:
             send_message_to_telegram('Будет выведено первые 10 результатов')
         keyboard = [[InlineKeyboardButton(f'{item.name}', callback_data=f'{item.name}'), ] for item in area[:10]]
+        keyboard.append([InlineKeyboardButton('Отмена', callback_data=f'Отмена')])
         reply_markup = InlineKeyboardMarkup(keyboard)
         update.message.reply_text(
             'Выберите из возможных:',
@@ -105,10 +106,13 @@ def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
 
     query.answer()
-    area = Area.objects.get(name=query.data)
-    area.in_search = True
-    area.save()
-    query.edit_message_text(text=f"Выбрана область поиска: {query.data}")
+    if query.data == 'Отмена':
+        query.edit_message_text(text=f"Выбор отменен")
+    else:
+        area = Area.objects.get(name=query.data)
+        area.in_search = True
+        area.save()
+        query.edit_message_text(text=f"Выбрана область поиска: {query.data}")
 
 
 class Command(BaseCommand):
