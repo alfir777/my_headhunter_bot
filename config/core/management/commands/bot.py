@@ -56,11 +56,11 @@ def add(update: Update, context: CallbackContext) -> None:
     ).save()
 
     try:
-        area = Area.objects.filter(name__icontains=" ".join(context.args))
-        if len(area) == 0:
+        if not context.args:
             send_message_to_telegram('Не найдено не одного региона')
-            return
-        elif len(area) > 10:
+            raise ValueError
+        area = Area.objects.filter(name__icontains=" ".join(context.args))
+        if len(area) > 10:
             send_message_to_telegram('Будет выведено первые 10 результатов')
         keyboard = [[InlineKeyboardButton(f'{item.name}', callback_data=f'{item.name}'), ] for item in area[:10]]
         keyboard.append([InlineKeyboardButton('Отмена', callback_data=f'Отмена')])
