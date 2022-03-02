@@ -1,7 +1,7 @@
 # Бот на python-telegram-bot с Django 3
 
-Бот на python-telegram-bot с Django 3 для упрощения поиска работы с hh.ru
-Поиск выполняется из https://api.hh.ru
+Бот на python-telegram-bot с Django 3 для упрощения поиска работы с hh.ru  
+Поиск выполняется из https://api.hh.ru  
 Веб организован только с панелью администратора Django (изменен только пусть с 'admin/' на '/')
 
 ## Запуск
