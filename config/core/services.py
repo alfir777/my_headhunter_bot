@@ -1,5 +1,4 @@
 import json
-import os
 import time
 
 import pandas as pd
@@ -10,27 +9,6 @@ from telegram import Update
 from telegram.ext import CallbackContext
 
 from core.models import Area, Vacancy
-
-
-def log_errors(func):
-    def sub_func(*args, **kwargs):
-        try:
-            return func(*args, **kwargs)
-        except Exception as exc:
-            error_message = f'Произошла ошибка: {exc}'
-            print(error_message)
-            raise exc
-
-    return sub_func
-
-
-def send_message_to_telegram(message):
-    token = os.environ['TELEGRAM_BOT_TOKEN']
-    chat_id = os.environ['TELEGRAM_CHAT_ID']
-
-    URL = 'https://api.telegram.org/bot' + token + '/sendMessage'
-    data = {'chat_id': chat_id, 'text': message, }
-    request = requests.post(URL, data=data)
 
 
 def update_status_vacancy(update: Update, context: CallbackContext):
@@ -59,7 +37,7 @@ def update_status_vacancy(update: Update, context: CallbackContext):
     update.message.reply_text('Вакансии обновлены')
 
 
-def get_areas():
+def get_areas(update: Update, context: CallbackContext):
     request = requests.get('https://api.hh.ru/areas')
     areas = request.json()
     df = pd.concat([
@@ -86,11 +64,12 @@ def get_areas():
                 parent_id=parent_id,
                 name=item['name']
             ).save()
+    update.message.reply_text('Области обновлены/добавлены')
 
 
-def get_vacancies_in_api(area, search_text):
+def get_vacancies_in_api(update: Update, context: CallbackContext, area, search_text):
     """
-    Создаем метод для получения страницы со списком вакансий.
+    Создаем метод для получения вакансий по API.
     Аргументы:
         page - Индекс страницы, начинается с 0. Значение по умолчанию 0, т.е. первая страница
     """
@@ -151,7 +130,7 @@ def get_vacancies_in_api(area, search_text):
                 vacancy.salary = salary
                 vacancy.save()
             except Vacancy.DoesNotExist:
-                send_message_to_telegram(f'Вакансия \n\n {item["alternate_url"]}')
+                update.message.reply_text(f'Вакансия \n\n {item["alternate_url"]}')
                 vacancy = Vacancy(
                     vacancy_id=item['id'],
                     area=Area.objects.get(area_id=area),
@@ -163,6 +142,6 @@ def get_vacancies_in_api(area, search_text):
                     salary=salary,
                 ).save()
         time.sleep(0.25)
-    send_message_to_telegram(
+    update.message.reply_text(
         f'{Area.objects.get(area_id=area)} - вакансии собраны/обновлены\n (запрос - "{search_text}")'
     )

@@ -6,24 +6,21 @@ from telegram.ext import Updater, CallbackContext, CommandHandler, CallbackQuery
 from telegram.utils.request import Request
 
 from core.models import Profile, Message, Area, SearchQuery
-from core.services import log_errors, update_status_vacancy, get_vacancies_in_api, get_areas
+from core.services import update_status_vacancy, get_vacancies_in_api, get_areas
 
 
 def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Use /status, /get_vacancies, /add, /get_area or /search to test this bot.")
 
 
-@log_errors
 def status(update: Update, context: CallbackContext):
     update_status_vacancy(update, context)
 
 
-@log_errors
 def get_area(update: Update, context: CallbackContext):
-    get_areas()
+    get_areas(update, context)
 
 
-@log_errors
 def get_vacancies(update: Update, context: CallbackContext):
     if len(Area.objects.all()) == 0:
         update.message.reply_text('Выполните команду для заполнения областей:\n/get_area')
@@ -36,10 +33,9 @@ def get_vacancies(update: Update, context: CallbackContext):
     else:
         for item in area:
             for text in search_text:
-                get_vacancies_in_api(area=item.area_id, search_text=text)
+                get_vacancies_in_api(update, context, area=item.area_id, search_text=text)
 
 
-@log_errors
 def add(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
 
@@ -74,7 +70,6 @@ def add(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('Usage: /add <text_search>')
 
 
-@log_errors
 def search(update: Update, context: CallbackContext) -> None:
     chat_id = update.message.chat_id
     text = update.message.text
@@ -101,7 +96,6 @@ def search(update: Update, context: CallbackContext) -> None:
         update.message.reply_text('Usage: /search <text_search>')
 
 
-@log_errors
 def button(update: Update, context: CallbackContext) -> None:
     query = update.callback_query
 
