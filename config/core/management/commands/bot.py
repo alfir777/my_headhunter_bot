@@ -6,7 +6,7 @@ from telegram.ext import Updater, CallbackContext, CommandHandler, CallbackQuery
 from telegram.utils.request import Request
 
 from core.models import Profile, Message, Area, SearchQuery
-from core.services import log_errors, update_status_vacancy, get_vacancies_in_api, send_message_to_telegram, get_areas
+from core.services import log_errors, update_status_vacancy, get_vacancies_in_api, get_areas
 
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -15,7 +15,7 @@ def start(update: Update, context: CallbackContext) -> None:
 
 @log_errors
 def status(update: Update, context: CallbackContext):
-    update_status_vacancy()
+    update_status_vacancy(update, context)
 
 
 @log_errors
@@ -26,13 +26,13 @@ def get_area(update: Update, context: CallbackContext):
 @log_errors
 def get_vacancies(update: Update, context: CallbackContext):
     if len(Area.objects.all()) == 0:
-        send_message_to_telegram('Выполните команду для заполнения областей:\n/get_area')
+        update.message.reply_text('Выполните команду для заполнения областей:\n/get_area')
     area = Area.objects.filter(in_search=True)
     search_text = SearchQuery.objects.filter(in_search=True)
     if len(area) == 0:
-        send_message_to_telegram('Не выбрано не одного региона')
+        update.message.reply_text('Не выбрано не одного региона')
     elif len(search_text) == 0:
-        send_message_to_telegram('Нет ни одного текстового запроса')
+        update.message.reply_text('Нет ни одного текстового запроса')
     else:
         for item in area:
             for text in search_text:
@@ -57,11 +57,11 @@ def add(update: Update, context: CallbackContext) -> None:
 
     try:
         if not context.args:
-            send_message_to_telegram('Не найдено не одного региона')
+            update.message.reply_text('Не найдено не одного региона')
             raise ValueError
         area = Area.objects.filter(name__icontains=" ".join(context.args))
         if len(area) > 10:
-            send_message_to_telegram('Будет выведено первые 10 результатов')
+            update.message.reply_text('Будет выведено первые 10 результатов')
         keyboard = [[InlineKeyboardButton(f'{item.name}', callback_data=f'{item.name}'), ] for item in area[:10]]
         keyboard.append([InlineKeyboardButton('Отмена', callback_data=f'Отмена')])
         reply_markup = InlineKeyboardMarkup(keyboard)

@@ -6,6 +6,8 @@ import pandas as pd
 import requests
 from django.core.handlers.base import logger
 from pandas import json_normalize
+from telegram import Update
+from telegram.ext import CallbackContext
 
 from core.models import Area, Vacancy
 
@@ -31,8 +33,9 @@ def send_message_to_telegram(message):
     request = requests.post(URL, data=data)
 
 
-def update_status_vacancy():
+def update_status_vacancy(update: Update, context: CallbackContext):
     """
+    Обновление статусов существующих вакансии
     Более подробная информация по ссылке:
     https://github.com/hhru/api/blob/master/docs/vacancies.md
     :return: None
@@ -44,16 +47,16 @@ def update_status_vacancy():
         json_file = request.json()
         try:
             if json_file["archived"] and item.status == 'new':
-                send_message_to_telegram(f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                update.message.reply_text(f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
                 item.status = 'archive'
                 item.save()
             elif not json_file["archived"] and item.status == 'archive':
-                send_message_to_telegram(f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
+                update.message.reply_text(f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
                 item.status = 'new'
                 item.save()
         except KeyError:
             logger.error(f'Ошибка с https://api.hh.ru/vacancies/{item.vacancy_id}')
-    send_message_to_telegram('Вакансии обновлены')
+    update.message.reply_text('Вакансии обновлены')
 
 
 def get_areas():
