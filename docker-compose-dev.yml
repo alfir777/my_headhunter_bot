@@ -44,6 +44,7 @@ services:
       - .:/home/user/web
     restart: always
     networks:
+      - web
       - internal
 
   redis:
@@ -51,6 +52,7 @@ services:
     image: redis
     restart: always
     networks:
+      - web
       - internal
 
   celery-beats:
@@ -62,4 +64,5 @@ services:
       - .:/home/user/web
     command: bash -c 'celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler'
     networks:
+      - web
       - internal
