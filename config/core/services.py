@@ -1,4 +1,5 @@
 import json
+import os
 import time
 
 import pandas as pd
@@ -11,7 +12,28 @@ from telegram.ext import CallbackContext
 from core.models import Area, Vacancy
 
 
-def update_status_vacancy(update: Update, context: CallbackContext):
+def send_message_to_telegram(message: str):
+    """
+    Для отправки сообщении из Celery на TELEGRAM_CHAT_ID по заданиям
+    :param message:
+    :return:
+    """
+    token = os.environ['TELEGRAM_BOT_TOKEN']
+    chat_id = os.environ['TELEGRAM_CHAT_ID']
+
+    URL = 'https://api.telegram.org/bot' + token + '/sendMessage'
+    data = {'chat_id': chat_id, 'text': message, }
+    request = requests.post(URL, data=data)
+
+
+def send_message(update: Update, context: CallbackContext, message: str, is_bot=False):
+    if is_bot:
+        return update.message.reply_text(message)
+    else:
+        return send_message_to_telegram(message)
+
+
+def update_status_vacancy(update: Update, context: CallbackContext, is_bot=False):
     """
     Обновление статусов существующих вакансии
     Более подробная информация по ссылке:
@@ -19,25 +41,33 @@ def update_status_vacancy(update: Update, context: CallbackContext):
     :return: None
     """
 
+    send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
+
     vacancies = Vacancy.objects.all()
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
         json_file = request.json()
         try:
             if json_file["archived"] and item.status == 'new':
-                update.message.reply_text(f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                send_message(update, context, is_bot=is_bot,
+                             message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
                 item.status = 'archive'
                 item.save()
             elif not json_file["archived"] and item.status == 'archive':
-                update.message.reply_text(f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
+                send_message(update, context, is_bot=is_bot,
+                             message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                update.message.reply_text()
                 item.status = 'new'
                 item.save()
         except KeyError:
             logger.error(f'Ошибка с https://api.hh.ru/vacancies/{item.vacancy_id}')
-    update.message.reply_text('Вакансии обновлены')
+
+    send_message(update, context, message='Вакансии обновлены', is_bot=is_bot)
 
 
-def get_areas(update: Update, context: CallbackContext):
+def get_areas(update: Update, context: CallbackContext, is_bot=False):
+    send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
+
     request = requests.get('https://api.hh.ru/areas')
     areas = request.json()
     df = pd.concat([
@@ -64,10 +94,10 @@ def get_areas(update: Update, context: CallbackContext):
                 parent_id=parent_id,
                 name=item['name']
             ).save()
-    update.message.reply_text('Области обновлены/добавлены')
+    send_message(update, context, message='Области обновлены/добавлены', is_bot=is_bot)
 
 
-def get_vacancies_in_api(update: Update, context: CallbackContext, area, search_text):
+def get_vacancies_in_api(update: Update, context: CallbackContext, area: Area, search_text: str, is_bot=False):
     """
     Создаем метод для получения вакансий по API.
     Аргументы:
@@ -76,7 +106,7 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area, search_
     params = {
         # 'text': f'NAME:{TEXT_SEARCH}',
         'text': search_text,
-        'area': area,
+        'area': area.area_id,
         'page': 0,
         'per_page': 100
     }
@@ -85,10 +115,12 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area, search_
     data = req.content.decode()
     json_data = json.loads(data)
     req.close()
+    send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
+
     for page in range(0, json_data['pages'] + 1):
         params = {
             'text': search_text,
-            'area': area,
+            'area': area.area_id,
             'page': page,
             'per_page': 100
         }
@@ -130,10 +162,10 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area, search_
                 vacancy.salary = salary
                 vacancy.save()
             except Vacancy.DoesNotExist:
-                update.message.reply_text(f'Вакансия \n\n {item["alternate_url"]}')
+                send_message(f'Вакансия \n\n {item["alternate_url"]}')
                 vacancy = Vacancy(
                     vacancy_id=item['id'],
-                    area=Area.objects.get(area_id=area),
+                    area=area,
                     title=item['name'],
                     company=item['employer']['name'],
                     url_company=item['employer']['url'],
@@ -142,6 +174,5 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area, search_
                     salary=salary,
                 ).save()
         time.sleep(0.25)
-    update.message.reply_text(
-        f'{Area.objects.get(area_id=area)} - вакансии собраны/обновлены\n (запрос - "{search_text}")'
-    )
+    send_message(update, context, is_bot=is_bot,
+                 message=f'{area} - вакансии собраны/обновлены\n (запрос - "{search_text}")')

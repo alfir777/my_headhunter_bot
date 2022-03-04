@@ -14,11 +14,11 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 def status(update: Update, context: CallbackContext):
-    update_status_vacancy(update, context)
+    update_status_vacancy(update, context, is_bot=True)
 
 
 def get_area(update: Update, context: CallbackContext):
-    get_areas(update, context)
+    get_areas(update, context, is_bot=True)
 
 
 def get_vacancies(update: Update, context: CallbackContext):
@@ -31,9 +31,9 @@ def get_vacancies(update: Update, context: CallbackContext):
     elif len(search_text) == 0:
         update.message.reply_text('Нет ни одного текстового запроса')
     else:
-        for item in area:
+        for i in area:
             for text in search_text:
-                get_vacancies_in_api(update, context, area=item.area_id, search_text=text)
+                get_vacancies_in_api(update, context, area=i, search_text=text, is_bot=True)
 
 
 def add(update: Update, context: CallbackContext) -> None:
