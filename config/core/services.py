@@ -4,7 +4,7 @@ import time
 
 import pandas as pd
 import requests
-from django.core.handlers.base import logger
+from django.core.exceptions import ObjectDoesNotExist
 from pandas import json_normalize
 from telegram import Update
 from telegram.ext import CallbackContext
@@ -21,9 +21,9 @@ def send_message_to_telegram(message: str):
     token = os.environ['TELEGRAM_BOT_TOKEN']
     chat_id = os.environ['TELEGRAM_CHAT_ID']
 
-    URL = 'https://api.telegram.org/bot' + token + '/sendMessage'
+    url = 'https://api.telegram.org/bot' + token + '/sendMessage'
     data = {'chat_id': chat_id, 'text': message, }
-    request = requests.post(URL, data=data)
+    request = requests.post(url, data=data)
 
 
 def send_message(update: Update, context: CallbackContext, message: str, is_bot=False):
@@ -33,7 +33,7 @@ def send_message(update: Update, context: CallbackContext, message: str, is_bot=
         return send_message_to_telegram(message)
 
 
-def update_status_vacancy(update: Update, context: CallbackContext, is_bot=False):
+def update_status_vacancy(update: Update or None, context: CallbackContext or None, is_bot=False):
     """
     Обновление статусов существующих вакансии
     Более подробная информация по ссылке:
@@ -52,14 +52,15 @@ def update_status_vacancy(update: Update, context: CallbackContext, is_bot=False
                 send_message(update, context, is_bot=is_bot,
                              message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
                 item.status = 'archive'
-                item.save()
             elif not json_file["archived"] and item.status == 'archive':
                 send_message(update, context, is_bot=is_bot,
-                             message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                             message=f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
                 item.status = 'new'
-                item.save()
         except KeyError:
-            logger.error(f'Ошибка с https://api.hh.ru/vacancies/{item.vacancy_id}')
+            send_message(update, context, is_bot=is_bot,
+                         message=f'Вакансия недоступна \n\n {json_file["alternate_url"]}')
+            item.status = 'unavailable'
+        item.save()
 
     send_message(update, context, message='Вакансии обновлены', is_bot=is_bot)
 
@@ -87,7 +88,7 @@ def get_areas(update: Update, context: CallbackContext, is_bot=False):
             area.parent_id = parent_id
             area.name = item['name']
             area.save()
-        except Area.DoesNotExist:
+        except ObjectDoesNotExist:
             area = Area(
                 area_id=item['id'],
                 parent_id=parent_id,
@@ -96,7 +97,11 @@ def get_areas(update: Update, context: CallbackContext, is_bot=False):
     send_message(update, context, message='Области обновлены/добавлены', is_bot=is_bot)
 
 
-def get_vacancies_in_api(update: Update, context: CallbackContext, area: Area, search_text: str, is_bot=False):
+def get_vacancies_in_api(update: Update or None,
+                         context: CallbackContext or None,
+                         area: Area,
+                         search_text: str,
+                         is_bot=False):
     """
     Создаем метод для получения вакансий по API.
     Аргументы:
@@ -115,6 +120,7 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area: Area, s
     json_data = json.loads(data)
     req.close()
     send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
+    count = 0
 
     for page in range(0, json_data['pages'] + 1):
         params = {
@@ -160,7 +166,7 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area: Area, s
                 vacancy.updated_at = item['created_at']
                 vacancy.salary = salary
                 vacancy.save()
-            except Vacancy.DoesNotExist:
+            except ObjectDoesNotExist:
                 send_message(update, context, is_bot=is_bot, message=f'Вакансия \n\n {item["alternate_url"]}')
                 vacancy = Vacancy(
                     vacancy_id=item['id'],
@@ -172,6 +178,10 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area: Area, s
                     updated_at=item['created_at'],
                     salary=salary,
                 ).save()
+                count += 1
         time.sleep(0.25)
-    send_message(update, context, is_bot=is_bot,
-                 message=f'{area} - вакансии собраны/обновлены\n (запрос - "{search_text}")')
+    if count > 0:
+        message = f'{area} - вакансии собраны/обновлены\n (запрос - "{search_text}")'
+    else:
+        message = f'{area} - новых вакансии нет..\n (запрос - "{search_text}")'
+    send_message(update, context, is_bot=is_bot, message=message)

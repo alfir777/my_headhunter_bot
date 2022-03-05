@@ -13,15 +13,15 @@ def start(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Use /status, /get_vacancies, /add, /get_area or /search to test this bot.")
 
 
-def status(update: Update, context: CallbackContext):
+def status(update: Update, context: CallbackContext) -> None:
     update_status_vacancy(update, context, is_bot=True)
 
 
-def get_area(update: Update, context: CallbackContext):
+def get_area(update: Update, context: CallbackContext) -> None:
     get_areas(update, context, is_bot=True)
 
 
-def get_vacancies(update: Update, context: CallbackContext):
+def get_vacancies(update: Update, context: CallbackContext) -> None:
     if len(Area.objects.all()) == 0:
         update.message.reply_text('Выполните команду для заполнения областей:\n/get_area')
     area = Area.objects.filter(in_search=True)
