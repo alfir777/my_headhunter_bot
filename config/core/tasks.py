@@ -10,6 +10,6 @@ from core.services import get_vacancies_in_api
 def get_vacancies(update: Update, context: CallbackContext):
     area = Area.objects.filter(in_search=True)
     search_text = SearchQuery.objects.filter(in_search=True)
-    for item in area:
+    for i in area:
         for text in search_text:
-            get_vacancies_in_api(update, context, area=item.area_id, search_text=text)
+            get_vacancies_in_api(update, context, area=i, search_text=text, is_bot=False)
