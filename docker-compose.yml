@@ -3,6 +3,8 @@ version: '3'
 networks:
   web:
     external: true
+  internal:
+    external: false
 
 services:
   job:
@@ -18,8 +20,6 @@ services:
       - '8089:8000'
     labels:
       - "traefik.enable=true"
-      #- "traefik.http.routers.job.rule=Host(`$DOMAINNAME`)"
-      #- "traefik.http.routers.job.tls=true"
       ## HTTP Routers
       - "traefik.http.routers.job-rtr.entrypoints=https"
       - "traefik.http.routers.job-rtr.rule=Host(`$DOMAINNAME`)"
@@ -32,6 +32,7 @@ services:
       - "com.centurylinklabs.watchtower.enable=false"
     networks:
       - web
+      - internal
 
   bot:
     build: .
@@ -44,3 +45,36 @@ services:
     restart: always
     networks:
       - web
+      - internal
+
+  redis:
+    container_name: redis
+    image: redis
+    restart: always
+    networks:
+      - web
+      - internal
+
+  worker:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - .:/home/user/web
+    command: bash -c 'celery -A config worker --loglevel=info'
+    networks:
+      - web
+      - internal
+
+  celery-beats:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - .:/home/user/web
+    command: bash -c 'celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler'
+    networks:
+      - web
+      - internal

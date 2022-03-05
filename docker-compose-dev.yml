@@ -55,6 +55,18 @@ services:
       - web
       - internal
 
+  worker:
+    build: .
+    restart: always
+    env_file:
+      - .env
+    volumes:
+      - .:/home/user/web
+    command: bash -c 'celery -A config worker --loglevel=info'
+    networks:
+      - web
+      - internal
+
   celery-beats:
     build: .
     restart: always
