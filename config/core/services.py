@@ -56,7 +56,6 @@ def update_status_vacancy(update: Update, context: CallbackContext, is_bot=False
             elif not json_file["archived"] and item.status == 'archive':
                 send_message(update, context, is_bot=is_bot,
                              message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
-                update.message.reply_text()
                 item.status = 'new'
                 item.save()
         except KeyError:
@@ -162,7 +161,7 @@ def get_vacancies_in_api(update: Update, context: CallbackContext, area: Area, s
                 vacancy.salary = salary
                 vacancy.save()
             except Vacancy.DoesNotExist:
-                send_message(f'Вакансия \n\n {item["alternate_url"]}')
+                send_message(update, context, is_bot=is_bot, message=f'Вакансия \n\n {item["alternate_url"]}')
                 vacancy = Vacancy(
                     vacancy_id=item['id'],
                     area=area,
