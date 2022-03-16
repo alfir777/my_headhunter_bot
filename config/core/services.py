@@ -1,6 +1,5 @@
 import json
 import os
-import time
 
 import pandas as pd
 import requests
@@ -58,7 +57,7 @@ def update_status_vacancy(update: Update or None, context: CallbackContext or No
                 item.status = 'new'
         except KeyError:
             send_message(update, context, is_bot=is_bot,
-                         message=f'Вакансия недоступна \n\n {json_file["alternate_url"]}')
+                         message=f'Вакансия недоступна \n\n {item.url_vacancy}')
             item.status = 'unavailable'
         item.save()
 
@@ -179,7 +178,6 @@ def get_vacancies_in_api(update: Update or None,
                     salary=salary,
                 ).save()
                 count += 1
-        time.sleep(0.25)
     if count > 0:
         message = f'{area} - вакансии собраны/обновлены\n (запрос - "{search_text}")'
     else:
