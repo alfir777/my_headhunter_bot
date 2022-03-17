@@ -11,7 +11,7 @@ from telegram.ext import CallbackContext
 from core.models import Area, Vacancy
 
 
-def send_message_to_telegram(message: str):
+def send_message_to_telegram(message: str) -> None:
     """
     Для отправки сообщении из Celery на TELEGRAM_CHAT_ID по заданиям
     :param message:
@@ -32,7 +32,7 @@ def send_message(update: Update, context: CallbackContext, message: str, is_bot=
         return send_message_to_telegram(message)
 
 
-def update_status_vacancy(update: Update or None, context: CallbackContext or None, is_bot=False):
+def update_status_vacancy(update: Update or None, context: CallbackContext or None, is_bot=False) -> None:
     """
     Обновление статусов существующих вакансии
     Более подробная информация по ссылке:
@@ -64,7 +64,7 @@ def update_status_vacancy(update: Update or None, context: CallbackContext or No
     send_message(update, context, message='Вакансии обновлены', is_bot=is_bot)
 
 
-def get_areas(update: Update, context: CallbackContext, is_bot=False):
+def get_areas(update: Update, context: CallbackContext, is_bot=False) -> None:
     send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
 
     request = requests.get('https://api.hh.ru/areas')
@@ -78,10 +78,7 @@ def get_areas(update: Update, context: CallbackContext, is_bot=False):
     result = df.to_json(orient="records")
     result_json = json.loads(result)
     for item in result_json:
-        if item['parent_id'] is None:
-            parent_id = 0
-        else:
-            parent_id = item['parent_id']
+        parent_id = [0 if item['parent_id'] is None else item['parent_id']]
         try:
             area = Area.objects.get(area_id=item['id'])
             area.parent_id = parent_id
@@ -90,25 +87,31 @@ def get_areas(update: Update, context: CallbackContext, is_bot=False):
         except ObjectDoesNotExist:
             area = Area(
                 area_id=item['id'],
-                parent_id=parent_id,
+                parent_id=parent_id[0],
                 name=item['name']
             ).save()
     send_message(update, context, message='Области обновлены/добавлены', is_bot=is_bot)
+
+
+def get_salary(salary) -> str:
+    if salary is None:
+        return 'Не указан доход'
+
+    salary_from = ['' if salary['from'] is None else salary['from']]
+    salary_to = ['' if salary['to'] is None else salary['to']]
+    salary_currency = ['' if salary['currency'] is None else salary['currency']]
+    salary_gross = ['' if salary['gross'] is None else 'до вычета налогов']
+
+    return f'{salary_from[0]} {salary_to[0]} {salary_currency[0]} {salary_gross[0]}'
 
 
 def get_vacancies_in_api(update: Update or None,
                          context: CallbackContext or None,
                          area: Area,
                          search_text: str,
-                         is_bot=False):
-    """
-    Создаем метод для получения вакансий по API.
-    Аргументы:
-        page - Индекс страницы, начинается с 0. Значение по умолчанию 0, т.е. первая страница
-    """
+                         is_bot=False) -> None:
     params = {
-        # 'text': f'NAME:{TEXT_SEARCH}',
-        'text': search_text,
+        'text': search_text,  # 'text': f'NAME:{TEXT_SEARCH}'
         'area': area.area_id,
         'page': 0,
         'per_page': 100
@@ -129,33 +132,13 @@ def get_vacancies_in_api(update: Update or None,
             'per_page': 100
         }
 
-        req = requests.get('https://api.hh.ru/vacancies', params)  # Посылаем запрос к API
-        data = req.content.decode()  # Декодируем его ответ, чтобы Кириллица отображалась корректно
+        req = requests.get('https://api.hh.ru/vacancies', params)
+        data = req.content.decode()
         json_data = json.loads(data)
         req.close()
 
         for item in json_data['items']:
-            salary = item['salary']
-            if salary is None:
-                salary = 'Не указан доход'
-            else:
-                if item['salary']['from'] is None:
-                    salary_from = ''
-                else:
-                    salary_from = item['salary']['from']
-                if item['salary']['to'] is None:
-                    salary_to = ''
-                else:
-                    salary_to = item['salary']['to']
-                if item['salary']['currency'] is None:
-                    salary_currency = ''
-                else:
-                    salary_currency = item['salary']['currency']
-                if item['salary']['gross'] is None:
-                    salary_gross = ''
-                else:
-                    salary_gross = 'до вычета налогов'
-                salary = f'{salary_from} {salary_to} {salary_currency} {salary_gross}'
+            salary = get_salary(salary=item['salary'])
             try:
                 vacancy = Vacancy.objects.get(vacancy_id=item['id'])
                 vacancy.title = item['name']
