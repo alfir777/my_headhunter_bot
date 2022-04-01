@@ -105,6 +105,12 @@ def get_salary(salary) -> str:
     return f'{salary_from[0]} {salary_to[0]} {salary_currency[0]} {salary_gross[0]}'
 
 
+def get_description(url):
+    request = requests.get(url)
+    json_file = request.json()
+    return json_file['description']
+
+
 def get_vacancies_in_api(update: Update or None,
                          context: CallbackContext or None,
                          area: Area,
@@ -144,7 +150,7 @@ def get_vacancies_in_api(update: Update or None,
                 vacancy.name = item['name']
                 vacancy.employer_name = item['employer']['name']
                 vacancy.employer_url = item['employer']['url']
-                vacancy.description = item['description']
+                vacancy.description = get_description(item['url'])
                 vacancy.alternate_url = item['alternate_url']
                 vacancy.updated_at = item['created_at']
                 vacancy.salary = salary
@@ -158,7 +164,7 @@ def get_vacancies_in_api(update: Update or None,
                     employer_name=item['employer']['name'],
                     employer_url=item['employer']['url'],
                     alternate_url=item['alternate_url'],
-                    description=item['description'],
+                    description=get_description(item['url']),
                     updated_at=item['created_at'],
                     salary=salary,
                 ).save()
