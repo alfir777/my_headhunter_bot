@@ -32,7 +32,7 @@ def send_message(update: Update, context: CallbackContext, message: str, is_bot=
         return send_message_to_telegram(message)
 
 
-def update_status_vacancy(update: Update or None, context: CallbackContext or None, is_bot=False) -> None:
+def update_vacancy(update: Update or None, context: CallbackContext or None, is_bot=False) -> None:
     """
     Обновление статусов существующих вакансии
     Более подробная информация по ссылке:
@@ -43,25 +43,48 @@ def update_status_vacancy(update: Update or None, context: CallbackContext or No
     send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
 
     vacancies = Vacancy.objects.all()
+    count_all = vacancies.count()
+    count_archive = 0
+
+    count_unavailable = 0
+
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
         json_file = request.json()
+        if item.status != 'unavailable':
+            item.name = item['name']
+            item.employer_name = item['employer']['name']
+            item.employer_url = item['employer']['url']
+            item.description = get_description(item['url'])
+            item.alternate_url = item['alternate_url']
+            item.updated_at = item['created_at']
+            item.salary = get_salary(salary=item['salary'])
         try:
             if json_file["archived"] and item.status == 'new':
-                send_message(update, context, is_bot=is_bot,
-                             message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                if item.watch:
+                    send_message(update, context, is_bot=is_bot,
+                                 message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
                 item.status = 'archive'
+                count_archive += 1
             elif not json_file["archived"] and item.status == 'archive':
-                send_message(update, context, is_bot=is_bot,
-                             message=f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
+                if item.watch:
+                    send_message(update, context, is_bot=is_bot,
+                                 message=f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
                 item.status = 'new'
         except KeyError:
-            send_message(update, context, is_bot=is_bot,
-                         message=f'Вакансия недоступна \n\n {item.alternate_url}')
+            if item.watch:
+                send_message(update, context, is_bot=is_bot,
+                             message=f'Вакансия недоступна \n\n {item.alternate_url}')
             item.status = 'unavailable'
+            count_unavailable += 1
         item.save()
-
-    send_message(update, context, message='Вакансии обновлены', is_bot=is_bot)
+    count_new = count_all - count_archive - count_unavailable
+    message = 'Вакансии обновлены \n' \
+              f' всего вакансии {count_all}' \
+              f' доступно {count_new}' \
+              f' в архиве {count_archive}' \
+              f' недоступно {count_unavailable}'
+    send_message(update, context, message=message, is_bot=is_bot)
 
 
 def get_areas(update: Update, context: CallbackContext, is_bot=False) -> None:

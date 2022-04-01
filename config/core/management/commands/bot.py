@@ -6,7 +6,7 @@ from telegram.ext import Updater, CallbackContext, CommandHandler, CallbackQuery
 from telegram.utils.request import Request
 
 from core.models import Profile, Message, Area, SearchQuery
-from core.services import update_status_vacancy, get_vacancies_in_api, get_areas
+from core.services import update_vacancy, get_vacancies_in_api, get_areas
 
 
 def start(update: Update, context: CallbackContext) -> None:
@@ -14,7 +14,7 @@ def start(update: Update, context: CallbackContext) -> None:
 
 
 def status(update: Update, context: CallbackContext) -> None:
-    update_status_vacancy(update, context, is_bot=True)
+    update_vacancy(update, context, is_bot=True)
 
 
 def get_area(update: Update, context: CallbackContext) -> None:

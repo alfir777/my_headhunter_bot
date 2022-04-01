@@ -1,7 +1,7 @@
 from celery import shared_task
 
 from core.models import Area, SearchQuery
-from core.services import get_vacancies_in_api, update_status_vacancy
+from core.services import get_vacancies_in_api, update_vacancy
 
 
 @shared_task
@@ -15,4 +15,4 @@ def get_vacancies():
 
 @shared_task
 def update_status_vacancies():
-    update_status_vacancy(update=None, context=None, is_bot=False)
+    update_vacancy(update=None, context=None, is_bot=False)

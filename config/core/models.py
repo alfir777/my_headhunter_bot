@@ -36,6 +36,7 @@ class Area(BaseModel):
 
 class Vacancy(BaseModel):
     vacancy_id = models.IntegerField(unique=True, db_index=True, verbose_name='ID вакансии')
+    watch = models.BooleanField(default=False, verbose_name='Отклик')
     name = models.CharField(max_length=255, db_index=True, verbose_name='Название вакансии')
     area = models.ForeignKey(Area, on_delete=models.PROTECT, verbose_name='Область', related_name="vacancies")
     salary = models.CharField(max_length=255, verbose_name='Зарплата')
