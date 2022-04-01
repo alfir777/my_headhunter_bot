@@ -57,7 +57,7 @@ def update_status_vacancy(update: Update or None, context: CallbackContext or No
                 item.status = 'new'
         except KeyError:
             send_message(update, context, is_bot=is_bot,
-                         message=f'Вакансия недоступна \n\n {item.url_vacancy}')
+                         message=f'Вакансия недоступна \n\n {item.alternate_url}')
             item.status = 'unavailable'
         item.save()
 
@@ -141,10 +141,11 @@ def get_vacancies_in_api(update: Update or None,
             salary = get_salary(salary=item['salary'])
             try:
                 vacancy = Vacancy.objects.get(vacancy_id=item['id'])
-                vacancy.title = item['name']
-                vacancy.company = item['employer']['name']
-                vacancy.url_company = item['employer']['url']
-                vacancy.url_vacancy = item['alternate_url']
+                vacancy.name = item['name']
+                vacancy.employer_name = item['employer']['name']
+                vacancy.employer_url = item['employer']['url']
+                vacancy.description = item['description']
+                vacancy.alternate_url = item['alternate_url']
                 vacancy.updated_at = item['created_at']
                 vacancy.salary = salary
                 vacancy.save()
@@ -153,10 +154,11 @@ def get_vacancies_in_api(update: Update or None,
                 vacancy = Vacancy(
                     vacancy_id=item['id'],
                     area=area,
-                    title=item['name'],
-                    company=item['employer']['name'],
-                    url_company=item['employer']['url'],
-                    url_vacancy=item['alternate_url'],
+                    name=item['name'],
+                    employer_name=item['employer']['name'],
+                    employer_url=item['employer']['url'],
+                    alternate_url=item['alternate_url'],
+                    description=item['description'],
                     updated_at=item['created_at'],
                     salary=salary,
                 ).save()

@@ -26,14 +26,14 @@ class VacancyAdmin(admin.ModelAdmin):
     save_as = True
     save_on_top = True
     list_display = (
-        'vacancy_id', 'area', 'status', 'title', 'company', 'url_vacancy', 'created_at', 'updated_at', 'salary'
+        'vacancy_id', 'area', 'status', 'name', 'employer_name', 'alternate_url', 'created_at', 'updated_at', 'salary'
     )
     list_filter = (
-        'status', AreaListFilter, 'company'
+        'status', AreaListFilter, 'employer_name'
     )
     list_editable = ('status',)
     ordering = ('created_at',)
-    search_fields = ('vacancy_id', 'title')
+    search_fields = ('vacancy_id', 'name')
 
 
 @admin.register(Area)
