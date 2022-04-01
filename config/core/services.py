@@ -50,26 +50,26 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
 
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
-        json_file = request.json()
+        vacancy = request.json()
         if item.status != 'unavailable':
-            item.name = item['name']
-            item.employer_name = item['employer']['name']
-            item.employer_url = item['employer']['url']
-            item.description = get_description(item['url'])
-            item.alternate_url = item['alternate_url']
-            item.updated_at = item['created_at']
-            item.salary = get_salary(salary=item['salary'])
+            item.name = vacancy['name']
+            item.employer_name = vacancy['employer']['name']
+            item.employer_url = vacancy['employer']['url']
+            item.description = get_description(vacancy['url'])
+            item.alternate_url = vacancy['alternate_url']
+            item.updated_at = vacancy['created_at']
+            item.salary = get_salary(salary=vacancy['salary'])
         try:
-            if json_file["archived"] and item.status == 'new':
+            if vacancy["archived"] and item.status == 'new':
                 if item.watch:
                     send_message(update, context, is_bot=is_bot,
-                                 message=f'Вакансия перенесена в архив \n\n {json_file["alternate_url"]}')
+                                 message=f'Вакансия перенесена в архив \n\n {vacancy["alternate_url"]}')
                 item.status = 'archive'
                 count_archive += 1
-            elif not json_file["archived"] and item.status == 'archive':
+            elif not vacancy["archived"] and item.status == 'archive':
                 if item.watch:
                     send_message(update, context, is_bot=is_bot,
-                                 message=f'Вакансия восстановлена из архива \n\n {json_file["alternate_url"]}')
+                                 message=f'Вакансия восстановлена из архива \n\n {vacancy["alternate_url"]}')
                 item.status = 'new'
         except KeyError:
             if item.watch:
