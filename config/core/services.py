@@ -55,7 +55,7 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
             item.name = vacancy['name']
             item.employer_name = vacancy['employer']['name']
             item.employer_url = vacancy['employer']['url']
-            item.description = get_description(vacancy['url'])
+            # item.description = vacancy['description']
             item.alternate_url = vacancy['alternate_url']
             item.updated_at = vacancy['created_at']
             item.salary = get_salary(salary=vacancy['salary'])
@@ -173,7 +173,7 @@ def get_vacancies_in_api(update: Update or None,
                 vacancy.name = item['name']
                 vacancy.employer_name = item['employer']['name']
                 vacancy.employer_url = item['employer']['url']
-                vacancy.description = get_description(item['url'])
+                # vacancy.description = get_description(item['url'])
                 vacancy.alternate_url = item['alternate_url']
                 vacancy.updated_at = item['created_at']
                 vacancy.salary = salary
@@ -187,7 +187,7 @@ def get_vacancies_in_api(update: Update or None,
                     employer_name=item['employer']['name'],
                     employer_url=item['employer']['url'],
                     alternate_url=item['alternate_url'],
-                    description=get_description(item['url']),
+                    # description=get_description(item['url']),
                     updated_at=item['created_at'],
                     salary=salary,
                 ).save()
