@@ -12,7 +12,9 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from pathlib import Path
 
+import sentry_sdk
 from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
 
 if 'DEBUG' not in os.environ:
     if os.path.isfile('../.env'):
@@ -171,3 +173,8 @@ INTERNAL_IPS = [
 ]
 
 CELERY_BROKER_URL = 'redis://redis:6379'
+
+sentry_sdk.init(
+    dsn=os.environ['SENTRY_SDK_DSN'],
+    integrations=[DjangoIntegration()]
+)
