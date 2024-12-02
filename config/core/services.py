@@ -43,29 +43,16 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
     send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
 
     vacancies = Vacancy.objects.all()
-    count_all = vacancies.count()
-    count_archive = 0
-
-    count_unavailable = 0
 
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
         vacancy = request.json()
-        if item.status != 'unavailable':
-            item.name = vacancy['name']
-            item.employer_name = vacancy['employer']['name']
-            item.employer_url = vacancy['employer']['url']
-            # item.description = vacancy['description']
-            item.alternate_url = vacancy['alternate_url']
-            item.updated_at = vacancy['created_at']
-            item.salary = get_salary(salary=vacancy['salary'])
         try:
             if vacancy["archived"] and item.status == 'new':
                 if item.watch:
                     send_message(update, context, is_bot=is_bot,
                                  message=f'Вакансия перенесена в архив \n\n {vacancy["alternate_url"]}')
                 item.status = 'archive'
-                count_archive += 1
             elif not vacancy["archived"] and item.status == 'archive':
                 if item.watch:
                     send_message(update, context, is_bot=is_bot,
@@ -76,14 +63,26 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
                 send_message(update, context, is_bot=is_bot,
                              message=f'Вакансия недоступна \n\n {item.alternate_url}')
             item.status = 'unavailable'
-            count_unavailable += 1
+        if item.status != 'unavailable':
+            item.name = vacancy['name']
+            item.employer_name = vacancy['employer']['name']
+            item.employer_url = vacancy['employer']['url']
+            item.description = vacancy['description']
+            item.alternate_url = vacancy['alternate_url']
+            item.updated_at = vacancy['created_at']
+            item.salary = get_salary(salary=vacancy['salary'])
         item.save()
-    count_new = count_all - count_archive - count_unavailable
+    count_all = Vacancy.objects.all().count()
+    count_new = Vacancy.objects.filter(status='new').count()
+    count_archive = Vacancy.objects.filter(status='archive').count()
+    count_unavailable = Vacancy.objects.filter(status='unavailable').count()
+    count_not_found = Vacancy.objects.filter(status='not_found').count()
     message = 'Вакансии обновлены \n' \
-              f' всего вакансии {count_all}' \
-              f' доступно {count_new}' \
-              f' в архиве {count_archive}' \
-              f' недоступно {count_unavailable}'
+              f' всего вакансии {count_all} \n' \
+              f' доступно {count_new} \n' \
+              f' в архиве {count_archive} \n' \
+              f' не найдено {count_not_found} \n' \
+              f' недоступно {count_unavailable} \n'
     send_message(update, context, message=message, is_bot=is_bot)
 
 
@@ -173,7 +172,7 @@ def get_vacancies_in_api(update: Update or None,
                 vacancy.name = item['name']
                 vacancy.employer_name = item['employer']['name']
                 vacancy.employer_url = item['employer']['url']
-                # vacancy.description = get_description(item['url'])
+                vacancy.description = get_description(item['url'])
                 vacancy.alternate_url = item['alternate_url']
                 vacancy.updated_at = item['created_at']
                 vacancy.salary = salary
@@ -187,7 +186,7 @@ def get_vacancies_in_api(update: Update or None,
                     employer_name=item['employer']['name'],
                     employer_url=item['employer']['url'],
                     alternate_url=item['alternate_url'],
-                    # description=get_description(item['url']),
+                    description=get_description(item['url']),
                     updated_at=item['created_at'],
                     salary=salary,
                 ).save()
