@@ -7,11 +7,11 @@
 ## Запуск
 1. Клонировать репозиторий или форк
 ```
-git clone https://github.com/alfir777/hhru.git
+git clone https://github.com/alfir777/my_headhunter_bot.git
 ```
 2. Выполнить копирование файла .env_template на .env и выставить свои параметры
 ```
-cd hhru/
+cd my_headhunter_bot/
 cp .env_template .env
 ```
 - SECRET_KEY: хотя бы изменить несколько символов из шаблона
