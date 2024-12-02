@@ -46,6 +46,11 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
 
     for item in vacancies:
         request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
+        if request.status_code == 404:
+            item.status = 'not_found'
+            item.save()
+            send_message(update, context, is_bot=is_bot, message=f'Вакансия не найдена \n\n {item.alternate_url}')
+            continue
         vacancy = request.json()
         try:
             if vacancy["archived"] and item.status == 'new':

@@ -48,6 +48,7 @@ class Vacancy(BaseModel):
         ('new', 'активно'),
         ('archive', 'в архиве'),
         ('unavailable', 'недоступна'),
+        ('not_found', 'не найдено'),
     )
     status = models.CharField(max_length=150, choices=status_choices, default='new', verbose_name='Статус')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
