@@ -1,0 +1,14 @@
+networks:
+  direct_net:
+    external: true
+
+services:
+  tests:
+    build: .
+    container_name: tests
+    command: bash -c 'python3 manage.py test'
+    volumes:
+      - .:/home/user/web
+    restart: always
+    networks:
+      - direct_net

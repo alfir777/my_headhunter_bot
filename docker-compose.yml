@@ -1,7 +1,7 @@
 version: '3'
 
 networks:
-  web:
+  direct_net:
     external: true
   internal:
     external: false
@@ -17,7 +17,7 @@ services:
       - .:/home/user/web
     restart: always
     ports:
-      - '8089:8000'
+      - '3008:8000'
     labels:
       - "traefik.enable=true"
       ## HTTP Routers
@@ -28,8 +28,10 @@ services:
       ## HTTP Services
       - "traefik.http.routers.job-rtr.service=job-svc"
       - "traefik.http.services.job-svc.loadbalancer.server.port=8000"
+      ## Disable from watchtower
+      - "com.centurylinklabs.watchtower.enable=false"
     networks:
-      - web
+      - direct_net
       - internal
 
   bot:
@@ -42,15 +44,18 @@ services:
       - .:/home/user/web
     restart: always
     networks:
-      - web
+      - direct_net
       - internal
+    labels:
+      ## Disable from watchtower
+      - "com.centurylinklabs.watchtower.enable=false"
 
   redis:
     container_name: redis
     image: redis
     restart: always
     networks:
-      - web
+      - direct_net
       - internal
 
   worker:
@@ -62,7 +67,7 @@ services:
       - .:/home/user/web
     command: bash -c 'celery -A config worker --loglevel=info'
     networks:
-      - web
+      - direct_net
       - internal
 
   celery-beats:
@@ -74,7 +79,7 @@ services:
       - .:/home/user/web
     command: bash -c 'celery -A config beat -l INFO --scheduler django_celery_beat.schedulers:DatabaseScheduler'
     networks:
-      - web
+      - direct_net
       - internal
 
   flower:
@@ -92,5 +97,5 @@ services:
       - worker
       - redis
     networks:
-      - web
+      - direct_net
       - internal
