@@ -1,0 +1,33 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ '**' ]
+
+jobs:
+  tests:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v2
+      - name: Create env file
+        run: |
+          touch .env
+          echo SECRET_KEY=${{ secrets.SECRET_KEY }} >> .env
+          echo TYPE_DATABASES=${{ secrets.TYPE_DATABASES }} >> .env
+          echo DATABASES_NAME=${{ secrets.DATABASES_NAME }} >> .env
+          echo DATABASES_USER=${{ secrets.DATABASES_USER }} >> .env
+          echo DATABASES_PASSWORD=${{ secrets.DATABASES_PASSWORD }} >> .env
+          echo DATABASES_HOST=${{ secrets.DATABASES_HOST }} >> .env
+          echo DATABASES_PORT=${{ secrets.DATABASES_PORT }} >> .env
+          echo TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }} >> .env
+          echo TELEGRAM_CHAT_ID=${{ secrets.TELEGRAM_CHAT_ID }} >> .env
+          echo DOMAINNAME=${{ secrets.DOMAINNAME }} >> .env
+          echo ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }} >> .env
+          echo DEBUG=${{ secrets.DEBUG }} >> .env
+          echo DJANGO_LOG_LEVEL=${{ secrets.DJANGO_LOG_LEVEL }} >> .env
+          echo DJANGO_LOG_FILE=${{ secrets.DJANGO_LOG_FILE }} >> .env
+          echo SENTRY_SDK_DSN=${{ secrets.SENTRY_SDK_DSN }} >> .env
+      - name: Run tests
+        run: docker compose -f docker-compose.tests.yml -p tests up --exit-code-from tests tests
+      - name: Delete containers
+        run: docker compose -f docker-compose.tests.yml -p tests down
