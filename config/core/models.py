@@ -1,5 +1,7 @@
 from django.db import models
 
+from core.enums import VacancyStatus
+
 
 class BaseModel(models.Model):
     objects = models.Manager()
@@ -44,13 +46,9 @@ class Vacancy(BaseModel):
     employer_name = models.CharField(max_length=255, db_index=True, verbose_name='Название компании')
     employer_url = models.URLField(verbose_name='Ссылка на компанию')
     alternate_url = models.URLField(verbose_name='Ссылка на вакансию')
-    status_choices = (
-        ('new', 'активно'),
-        ('archive', 'в архиве'),
-        ('unavailable', 'недоступна'),
-        ('not_found', 'не найдено'),
+    status = models.PositiveSmallIntegerField(
+        choices=VacancyStatus.choices(), default=VacancyStatus.new.value, verbose_name='Статус'
     )
-    status = models.CharField(max_length=150, choices=status_choices, default='new', verbose_name='Статус')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата добавления')
     updated_at = models.DateTimeField(verbose_name='Дата размещения')
 

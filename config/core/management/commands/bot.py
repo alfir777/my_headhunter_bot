@@ -10,11 +10,16 @@ from core.services import update_vacancy, get_vacancies_in_api, get_areas
 
 
 def start(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text("Use /status, /get_vacancies, /add, /get_area or /search to test this bot.")
+    update.message.reply_text(
+        "Use /status, /get_vacancies, /add, /get_area or /search, /all_statuses to test this bot."
+    )
 
 
 def status(update: Update, context: CallbackContext) -> None:
     update_vacancy(update, context, is_bot=True)
+
+def all_statuses(update: Update, context: CallbackContext) -> None:
+    update_vacancy(update, context, is_bot=True, all_vacancies=True)
 
 
 def get_area(update: Update, context: CallbackContext) -> None:
@@ -128,6 +133,7 @@ class Command(BaseCommand):
         )
 
         updater.dispatcher.add_handler(CommandHandler('status', status))
+        updater.dispatcher.add_handler(CommandHandler('all_statuses', all_statuses))
         updater.dispatcher.add_handler(CommandHandler('get_vacancies', get_vacancies))
         updater.dispatcher.add_handler(CommandHandler('get_area', get_area))
         updater.dispatcher.add_handler(CommandHandler('start', start))
