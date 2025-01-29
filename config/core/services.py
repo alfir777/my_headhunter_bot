@@ -8,6 +8,7 @@ from pandas import json_normalize
 from telegram import Update
 from telegram.ext import CallbackContext
 
+from core.enums import VacancyStatus
 from core.models import Area, Vacancy
 
 
@@ -32,7 +33,9 @@ def send_message(update: Update, context: CallbackContext, message: str, is_bot=
         return send_message_to_telegram(message)
 
 
-def update_vacancy(update: Update or None, context: CallbackContext or None, is_bot=False) -> None:
+def update_vacancy(
+        update: Update or None, context: CallbackContext or None, is_bot=False, all_vacancies: bool = False
+) -> None:
     """
     Обновление статусов существующих вакансии
     Более подробная информация по ссылке:
@@ -42,33 +45,43 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
 
     send_message(update, context, message='Пожалуйста, подождите...', is_bot=is_bot)
 
-    vacancies = Vacancy.objects.all()
+    if all_vacancies:
+        vacancies = Vacancy.objects.all()
+    else:
+        vacancies = Vacancy.objects.filter(status__in=[VacancyStatus.new.value, VacancyStatus.archive.value])
 
     for item in vacancies:
-        request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}')
+        request = requests.get(f'https://api.hh.ru/vacancies/{item.vacancy_id}', timeout=10)
         if request.status_code == 404:
+            if item.status == VacancyStatus.not_found.value:
+                continue
             item.status = 'not_found'
             item.save()
             send_message(update, context, is_bot=is_bot, message=f'Вакансия не найдена \n\n {item.alternate_url}')
             continue
         vacancy = request.json()
         try:
-            if vacancy["archived"] and item.status == 'new':
+            if vacancy["archived"] and item.status == VacancyStatus.new.value:
                 if item.watch:
                     send_message(update, context, is_bot=is_bot,
                                  message=f'Вакансия перенесена в архив \n\n {vacancy["alternate_url"]}')
-                item.status = 'archive'
-            elif not vacancy["archived"] and item.status == 'archive':
+                item.status = VacancyStatus.archive.value
+            elif not vacancy["archived"] and item.status == VacancyStatus.archive.value:
                 if item.watch:
                     send_message(update, context, is_bot=is_bot,
                                  message=f'Вакансия восстановлена из архива \n\n {vacancy["alternate_url"]}')
-                item.status = 'new'
+                item.status = VacancyStatus.new.value
+            elif item.status == VacancyStatus.not_found.value:
+                if item.watch:
+                    send_message(update, context, is_bot=is_bot,
+                                 message=f'Вакансия восстановлена из не найденных \n\n {vacancy["alternate_url"]}')
+                item.status = VacancyStatus.new.value
         except KeyError:
             if item.watch:
                 send_message(update, context, is_bot=is_bot,
                              message=f'Вакансия недоступна \n\n {item.alternate_url}')
-            item.status = 'unavailable'
-        if item.status != 'unavailable':
+            item.status = VacancyStatus.unavailable.value
+        if item.status != VacancyStatus.unavailable.value:
             item.name = vacancy['name']
             item.employer_name = vacancy['employer']['name']
             item.employer_url = vacancy['employer']['url']
@@ -78,10 +91,10 @@ def update_vacancy(update: Update or None, context: CallbackContext or None, is_
             item.salary = get_salary(salary=vacancy['salary'])
         item.save()
     count_all = Vacancy.objects.all().count()
-    count_new = Vacancy.objects.filter(status='new').count()
-    count_archive = Vacancy.objects.filter(status='archive').count()
-    count_unavailable = Vacancy.objects.filter(status='unavailable').count()
-    count_not_found = Vacancy.objects.filter(status='not_found').count()
+    count_new = Vacancy.objects.filter(status=VacancyStatus.new.value).count()
+    count_archive = Vacancy.objects.filter(status=VacancyStatus.archive.value).count()
+    count_unavailable = Vacancy.objects.filter(status=VacancyStatus.unavailable.value).count()
+    count_not_found = Vacancy.objects.filter(status=VacancyStatus.not_found.value).count()
     message = 'Вакансии обновлены \n' \
               f' всего вакансии {count_all} \n' \
               f' доступно {count_new} \n' \
@@ -135,7 +148,7 @@ def get_salary(salary) -> str:
 def get_description(url):
     request = requests.get(url)
     json_file = request.json()
-    return json_file['description']
+    return json_file.get('description', '')
 
 
 def get_vacancies_in_api(update: Update or None,
