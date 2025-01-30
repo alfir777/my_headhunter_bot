@@ -18,7 +18,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN pip install --upgrade pip
-RUN pip install poetry &&  poetry config virtualenvs.create false && poetry install --no-root
+RUN pip install poetry &&  poetry config virtualenvs.create false && poetry install --no-root --with=flower
 
 RUN chown -R user:user $USER_HOME
 

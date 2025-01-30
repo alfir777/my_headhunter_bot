@@ -1,0 +1,31 @@
+[tool.poetry]
+name = "my-headhunter-bot"
+version = "0.1.0"
+description = ""
+authors = ["Alfir Tyakin <alfir7777@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+django = "3.2.11"
+celery = "5.2.3"
+sentry-sdk = "0.10.2"
+python-dotenv = "0.19.2"
+django-celery-beat = "2.2.1"
+whitenoise = "6.0.0"
+psycopg2-binary = "2.9.3"
+gunicorn = "20.1.0"
+python-telegram-bot = "13.11"
+pandas = "1.4.1"
+numpy = "1.22.2" #todo after updating pandas move dependencies to dependencies
+requests = "2.27.1"
+redis = "4.1.4"
+
+
+[tool.poetry.group.flower.dependencies]
+flower = "1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+

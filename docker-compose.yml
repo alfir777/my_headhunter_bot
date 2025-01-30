@@ -83,7 +83,9 @@ services:
       - internal
 
   flower:
-    build: .
+    build:
+      context: .
+      dockerfile: flower.Dockerfile
     command: bash -c 'celery -A config flower'
     volumes:
       - .:/home/user/web
