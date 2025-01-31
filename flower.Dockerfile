@@ -1,4 +1,4 @@
-FROM python:3.9
+FROM python:3.12.8
 
 RUN apt-get update && apt-get upgrade -y && apt-get autoremove && apt-get autoclean
 
@@ -18,7 +18,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 RUN pip install --upgrade pip
-RUN pip install poetry &&  poetry config virtualenvs.create false && poetry install --no-root --with=flower
+RUN pip install poetry && poetry config virtualenvs.create false && poetry install --no-root --with=flower
 
 RUN chown -R user:user $USER_HOME
 
