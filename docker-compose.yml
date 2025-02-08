@@ -69,6 +69,9 @@ services:
     networks:
       - direct_net
       - internal
+    labels:
+      ## Disable from watchtower
+      - "com.centurylinklabs.watchtower.enable=false"
 
   celery-beats:
     build: .
@@ -81,6 +84,9 @@ services:
     networks:
       - direct_net
       - internal
+    labels:
+      ## Disable from watchtower
+      - "com.centurylinklabs.watchtower.enable=false"
 
   flower:
     build:
@@ -101,3 +107,6 @@ services:
     networks:
       - direct_net
       - internal
+    labels:
+      ## Disable from watchtower
+      - "com.centurylinklabs.watchtower.enable=false"
